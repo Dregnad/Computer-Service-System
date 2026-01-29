@@ -1,0 +1,22 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.8.0",
+  "id": "Form_OrderParts",
+  "components": [
+    {
+      "text": "# Zlecenie nr: {{orderId}}\n### Brak części w magazynie\nSystem wykrył brak podzespołów dla urządzenia: **{{deviceType}}**.\nPotwierdź zamówienie u dostawcy, aby kontynuować proces.",
+      "type": "text"
+    },
+    {
+      "label": "Czy części zostały zamówione?",
+      "type": "radio",
+      "id": "Field_ConfirmOrder",
+      "key": "orderPlaced",
+      "values": [
+        { "label": "Tak, zamówienie wysłane", "value": true }
+      ],
+      "validate": { "required": true }
+    }
+  ],
+  "type": "default"
+}

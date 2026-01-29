@@ -1,0 +1,30 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.8.0",
+  "id": "Form_RepairAction",
+  "components": [
+    {
+      "text": "# Zlecenie nr: {{orderId}}\n### Panel Naprawy Technicznej\nZlecenie dla: **{{customerFirstName}} {{customerLastName}}**\nUsterka: *{{issueDescription}}*",
+      "type": "text"
+    },
+    {
+      "label": "Opis wykonanych prac",
+      "type": "textarea",
+      "id": "Field_WorkDone",
+      "key": "repairDescription",
+      "validate": { "required": true }
+    },
+    {
+      "label": "Czy naprawa zakończyła się sukcesem?",
+      "type": "radio",
+      "id": "Field_RepairStatus",
+      "key": "repairSuccessful",
+      "values": [
+        { "label": "Tak, sprzęt sprawny", "value": true },
+        { "label": "Nie, wymagane poprawki", "value": false }
+      ],
+      "validate": { "required": true }
+    }
+  ],
+  "type": "default"
+}

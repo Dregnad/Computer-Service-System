@@ -1,0 +1,16 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.5.0",
+  "id": "Form_PackingTask",
+  "components": [
+    {
+      "text": "# Przygotowanie do wysyłki 📦\nKlient opłacił zlecenie **{{orderId}}**.",
+      "type": "text"
+    },
+    { "label": "Imię i Nazwisko", "type": "textfield", "key": "customerFullName", "disabled": true },
+    { "label": "Adres dostawy", "type": "textfield", "key": "customerAddress", "disabled": true },
+    { "label": "Numer listu przewozowego", "type": "textfield", "key": "trackingNumber", "validate": { "required": true } },
+    { "action": "submit", "label": "Zatwierdź nadanie paczki", "type": "button", "id": "Submit_Pack" }
+  ],
+  "type": "default"
+}

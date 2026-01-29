@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>System Serwisowy - Panel</title>
+    <link rel="stylesheet" href="https://unpkg.com/@bpmn-io/form-js@1.7.1/dist/assets/form-js.css">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f0f2f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        #success { display: none; text-align: center; padding: 20px; color: #2e7d32; background-color: #e8f5e9; border-radius: 8px; margin-bottom: 20px; }
+        .sim-panel { margin-top: 40px; padding: 20px; border-top: 2px solid #eee; background-color: #fffde7; border-radius: 8px; }
+        h2 { color: #1a73e8; }
+        input { padding: 10px; width: 200px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 20px; cursor: pointer; background: #1a73e8; color: white; border: none; border-radius: 4px; }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</head>
+<body>
+
+<div class="container">
+    <div id="success">
+        <b>Zgłoszenie zarejestrowane!</b><br>
+        Twoje ID to: <span id="display-order-id" style="font-weight: bold; color: #d32f2f;"></span><br>
+        Możesz je teraz skopiować do panelu płatności poniżej.
+    </div>
+
+    <div id="form-container">
+        <h2>Nowe Zgłoszenie Serwisowe</h2>
+        <div id="form"></div>
+    </div>
+
+    <div class="sim-panel">
+        <h3>🛠 Panel Symulacji (Dla studenta)</h3>
+        <p>Gdy proces dojdzie do etapu <b>"Oczekiwanie na płatność"</b>, wpisz ID i kliknij:</p>
+        <input type="text" id="sim-id" placeholder="Wpisz Order ID...">
+        <button onclick="confirmPayment()">Potwierdź wpłatę (Symulacja)</button>
+        <p id="sim-status" style="font-size: 12px; color: #666;"></p>
+    </div>
+</div>
+
+<script src="https://unpkg.com/@bpmn-io/form-js@1.7.1/dist/form-viewer.umd.js"></script>
+<script>
+    $.getJSON('/zgloszenie.json', function (schema) {
+        const container = document.querySelector('#form');
+        FormViewer.createForm({ container, schema }).then(function(form) {
+            form.on('submit', event => {
+                $.ajax("/start", {
+                    data: JSON.stringify(event.data),
+                    contentType: 'application/json',
+                    type: 'POST',
+                    success: function(data) {
+                        $('#display-order-id').text(data.orderId);
+                        $('#form-container').hide();
+                        $('#success').show();
+                    }
+                });
+            });
+        });
+    });
+
+    function confirmPayment() {
+        const id = $('#sim-id').val();
+        if(!id) return alert("Wpisz najpierw ID!");
+
+        $.post("/simulate-payment?orderId=" + id, function() {
+            $('#sim-status').text("✅ Wiadomość wysłana do Camundy dla " + id);
+        }).fail(function() {
+            alert("Błąd połączenia z serwerem!");
+        });
+    }
+</script>
+</body>
+</html>

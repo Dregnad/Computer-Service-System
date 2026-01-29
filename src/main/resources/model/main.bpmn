@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_Master" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="50c8b28" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="Master_Process" name="Główny Proces Serwisowy" isExecutable="true">
+    <bpmn:startEvent id="Start_From_Web" name="Zgłoszenie z formularza WWW">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1" messageRef="Msg_NewOrder" />
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_From_Web" targetRef="Send_Welcome_Email" />
+    <bpmn:sendTask id="Send_Welcome_Email" name="Wysyłka potwierdzenia">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="email-service" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Send_Welcome_Email" targetRef="Call_Intake" />
+    <bpmn:callActivity id="Call_Intake" name="Przyjęcie i Logistyka" calledElement="Sub_Intake_Process">
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="Sub_Intake_Process" propagateAllChildVariables="true" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:exclusiveGateway id="Gateway_Quote_Accepted" name="Czy klient zaakceptował?">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_Accepted</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Rejected</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Call_Intake" targetRef="Gateway_Quote_Accepted" />
+    <bpmn:callActivity id="Call_Repair" name="Naprawa Techniczna" calledElement="Sub_Service_Process">
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="Sub_Service_Process" propagateAllChildVariables="true" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Repair</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:exclusiveGateway id="Gateway_QA" name="Czy testy pomyślne?">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_Repair_Success</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Retry_Repair</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Call_Repair" targetRef="Gateway_QA" />
+    <bpmn:sequenceFlow id="Flow_Repair_Success" name="Tak" sourceRef="Gateway_QA" targetRef="Call_Billing">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=repairSuccessful = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:callActivity id="Call_Billing" name="Rozliczenie i Wysyłka" calledElement="Sub_Billing_Process">
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="Sub_Billing_Process" propagateAllChildVariables="true" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Repair_Success</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Call_Billing" targetRef="Send_NPS" />
+    <bpmn:sendTask id="Send_NPS" name="Prośba o opinię">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="email-service-1" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_020fake</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="End_Success" name="Zlecenie Zamknięte">
+      <bpmn:incoming>Flow_020fake</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_Cancelled" name="Zlecenie Anulowane">
+      <bpmn:incoming>Flow_039rnts</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:exclusiveGateway id="Gateway_0pytvqh">
+      <bpmn:incoming>Flow_Accepted</bpmn:incoming>
+      <bpmn:incoming>Flow_Retry_Repair_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_Repair</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_Accepted" name="Tak" sourceRef="Gateway_Quote_Accepted" targetRef="Gateway_0pytvqh">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=quoteAccepted = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Repair" name="Naprawa" sourceRef="Gateway_0pytvqh" targetRef="Call_Repair" />
+    <bpmn:sequenceFlow id="Flow_Retry_Repair" name="Błędy w QA" sourceRef="Gateway_QA" targetRef="Event_Timer">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=repairSuccessful = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_020fake" sourceRef="Send_NPS" targetRef="End_Success" />
+    <bpmn:sequenceFlow id="Flow_Rejected" name="Nie (Rezygnacja)" sourceRef="Gateway_Quote_Accepted" targetRef="Gateway_0520474">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=quoteAccepted = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:intermediateCatchEvent id="Event_Timer" name="Waiting">
+      <bpmn:incoming>Flow_Retry_Repair</bpmn:incoming>
+      <bpmn:outgoing>Flow_Retry_Repair_1</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_0mmat6s">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT10S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_Retry_Repair_1" sourceRef="Event_Timer" targetRef="Gateway_0pytvqh" />
+    <bpmn:boundaryEvent id="Event_0dcdb9p" name="Brak opłaty" attachedToRef="Call_Billing">
+      <bpmn:outgoing>Flow_0p1qs59</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_0yf12o1">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT60S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:exclusiveGateway id="Gateway_0520474">
+      <bpmn:incoming>Flow_Rejected</bpmn:incoming>
+      <bpmn:incoming>Flow_0p1qs59</bpmn:incoming>
+      <bpmn:outgoing>Flow_039rnts</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_039rnts" sourceRef="Gateway_0520474" targetRef="End_Cancelled" />
+    <bpmn:sequenceFlow id="Flow_0p1qs59" name="Zlecenie nie opłacone" sourceRef="Event_0dcdb9p" targetRef="Gateway_0520474" />
+  </bpmn:process>
+  <bpmn:message id="Msg_NewOrder" name="NewServiceOrderMsg" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Master_Process">
+      <bpmndi:BPMNShape id="Event_1_di" bpmnElement="Start_From_Web">
+        <dc:Bounds x="-8" y="100" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="-34" y="136" width="88" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1_di" bpmnElement="Send_Welcome_Email">
+        <dc:Bounds x="70" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_2_di" bpmnElement="Call_Intake">
+        <dc:Bounds x="400" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1_di" bpmnElement="Gateway_Quote_Accepted" isMarkerVisible="true">
+        <dc:Bounds x="555" y="93" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="615" y="104" width="72" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_4_di" bpmnElement="Call_Repair">
+        <dc:Bounds x="700" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_2_di" bpmnElement="Gateway_QA" isMarkerVisible="true">
+        <dc:Bounds x="865" y="95" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="863" y="145" width="54" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_5_di" bpmnElement="Call_Billing">
+        <dc:Bounds x="980" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_6_di" bpmnElement="Send_NPS">
+        <dc:Bounds x="1140" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_2_di" bpmnElement="End_Success">
+        <dc:Bounds x="1312" y="100" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1305" y="136" width="51" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_3_di" bpmnElement="End_Cancelled">
+        <dc:Bounds x="562" y="362" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="553" y="398" width="54" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0pytvqh_di" bpmnElement="Gateway_0pytvqh" isMarkerVisible="true">
+        <dc:Bounds x="715" y="-35" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0ffbpvw_di" bpmnElement="Event_Timer">
+        <dc:Bounds x="872" y="-28" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="872" y="-58" width="36" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0520474_di" bpmnElement="Gateway_0520474" isMarkerVisible="true">
+        <dc:Bounds x="555" y="245" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0dcdb9p_di" bpmnElement="Event_0dcdb9p">
+        <dc:Bounds x="1012" y="140" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1002" y="183" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="28" y="118" />
+        <di:waypoint x="70" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="170" y="118" />
+        <di:waypoint x="400" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="500" y="118" />
+        <di:waypoint x="555" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="800" y="118" />
+        <di:waypoint x="833" y="118" />
+        <di:waypoint x="833" y="120" />
+        <di:waypoint x="865" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S_di" bpmnElement="Flow_Repair_Success">
+        <di:waypoint x="915" y="120" />
+        <di:waypoint x="948" y="120" />
+        <di:waypoint x="948" y="118" />
+        <di:waypoint x="980" y="118" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="923" y="95" width="17" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="1080" y="118" />
+        <di:waypoint x="1140" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1iux3sg_di" bpmnElement="Flow_Accepted">
+        <di:waypoint x="580" y="93" />
+        <di:waypoint x="580" y="-10" />
+        <di:waypoint x="715" y="-10" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="587" y="41" width="17" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0iod93m_di" bpmnElement="Flow_Repair">
+        <di:waypoint x="740" y="15" />
+        <di:waypoint x="740" y="78" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="733" y="44" width="45" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_060oony_di" bpmnElement="Flow_Retry_Repair">
+        <di:waypoint x="890" y="95" />
+        <di:waypoint x="890" y="8" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="876" y="48" width="59" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_020fake_di" bpmnElement="Flow_020fake">
+        <di:waypoint x="1240" y="118" />
+        <di:waypoint x="1312" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0kb2vim_di" bpmnElement="Flow_Rejected">
+        <di:waypoint x="580" y="143" />
+        <di:waypoint x="580" y="245" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="567" y="189" width="85" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1g4ch28_di" bpmnElement="Flow_Retry_Repair_1">
+        <di:waypoint x="872" y="-10" />
+        <di:waypoint x="765" y="-10" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_039rnts_di" bpmnElement="Flow_039rnts">
+        <di:waypoint x="580" y="295" />
+        <di:waypoint x="580" y="362" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0p1qs59_di" bpmnElement="Flow_0p1qs59">
+        <di:waypoint x="1030" y="176" />
+        <di:waypoint x="1030" y="270" />
+        <di:waypoint x="605" y="270" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1016" y="228" width="59" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

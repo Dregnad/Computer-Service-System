@@ -1,0 +1,23 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.8.0",
+  "id": "Form_CustomerDecision",
+  "components": [
+    {
+      "text": "# Zlecenie nr: {{orderId}}\n### Twoja oferta serwisowa\nCałkowity koszt naprawy wynosi: **{{finalPrice}} PLN**",
+      "type": "text"
+    },
+    {
+      "label": "Czy akceptujesz koszty i zlecasz naprawę?",
+      "type": "radio",
+      "id": "Field_Decision",
+      "key": "quoteAccepted",
+      "values": [
+        { "label": "Tak, akceptuję koszty", "value": true },
+        { "label": "Nie, rezygnuję z naprawy", "value": false }
+      ],
+      "validate": { "required": true }
+    }
+  ],
+  "type": "default"
+}
